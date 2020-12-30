@@ -1,0 +1,52 @@
+version: '3'
+
+services:
+  service:
+    image: service-example
+    build:
+      context: ./service-example
+      dockerfile: Dockerfile
+    container_name: service
+    environment:
+      - PORT=${SERVICE_PORT}
+  backend:
+    image: backend-example
+    build:
+      context: ./backend-example
+      dockerfile: Dockerfile
+    container_name: backend-example
+    environment:
+      - PORT=${BE_PORT}
+      - SERVICE_PORT
+      - SERVICE_URL
+      - SERVICE_API_PATH
+    depends_on:
+      - service
+  frontend:
+    image: frontend-example
+    build:
+      context: ./frontend-example
+      dockerfile: Dockerfile
+      args:
+        backend_url: "${BE_HOST}:${BE_PORT}"
+        service_api_path: "${SERVICE_API_PATH}"
+    container_name: frontend-example
+    environment:
+      - PORT=${FE_PORT}
+    depends_on:
+      - backend
+  nginx:
+    image: nginx
+    container_name: nginx
+    ports:
+      - "${FE_PORT}:${FE_PORT}"
+      - "${BE_PORT}:${BE_PORT}"
+      - "${SERVICE_PORT}:${SERVICE_PORT}"
+    environment:
+      - FE_PORT
+      - BE_PORT
+      - SERVICE_PORT
+    volumes:
+      - ./nginx.conf:/etc/nginx/templates/default.conf.template
+    depends_on:
+      - frontend
